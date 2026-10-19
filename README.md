@@ -5,6 +5,8 @@ A polished take on the classic Snake game, built in Rust with
 
 <img src="packaging/snake.png" alt="Snake app icon" width="160">
 
+![Snake gameplay](docs/screenshot.png)
+
 <img src="docs/screenshot.png" alt="Snake gameplay screenshot" width="640">
 
 ## Download
