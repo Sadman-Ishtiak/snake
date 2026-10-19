@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Snake
+Comment=Classic snake game
+Exec=snake
+Icon=snake
+Terminal=false
+Categories=Game;ArcadeGame;
+Keywords=snake;game;arcade;
+StartupWMClass=snake

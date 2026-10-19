@@ -1,3 +1,6 @@
+mod icon;
+
+use macroquad::miniquad::conf::Icon;
 use macroquad::prelude::*;
 use macroquad::rand::gen_range;
 use std::collections::VecDeque;
@@ -79,7 +82,22 @@ fn start_snake() -> Vec<Vec2> {
     vec![vec2(9.0, 9.0), vec2(8.0, 9.0), vec2(7.0, 9.0)]
 }
 
-#[macroquad::main("Snake")]
+fn window_conf() -> Conf {
+    Conf {
+        window_title: "Snake".to_owned(),
+        window_width: 800,
+        window_height: 600,
+        window_resizable: true,
+        icon: Some(Icon {
+            small: icon::SMALL,
+            medium: icon::MEDIUM,
+            big: icon::BIG,
+        }),
+        ..Default::default()
+    }
+}
+
+#[macroquad::main(window_conf)]
 async fn main() {
     let mut cell: f32 = 30.0;
     let mut snake = start_snake();
@@ -99,8 +117,6 @@ async fn main() {
     let mut trail: VecDeque<(Vec2, f64)> = VecDeque::new();
     let mut recent_heads: VecDeque<Vec2> = VecDeque::new();
     let mut wander = 0u32;
-
-    request_new_screen_size(800.0, 600.0);
 
     let (mut grid_w, mut grid_h) = grid_size(cell);
     pending_fruits = sync_fruits(&mut foods, &snake, grid_w, grid_h, fruit_target(options[OPT_FRUITS].idx, free_cells(grid_w, grid_h, &snake)));
