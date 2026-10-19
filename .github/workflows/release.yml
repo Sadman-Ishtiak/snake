@@ -50,6 +50,18 @@ jobs:
           fi
           echo "value=$VERSION" >> "$GITHUB_OUTPUT"
 
+      - name: Check tag matches Cargo.toml
+        if: github.ref_type == 'tag'
+        shell: bash
+        run: |
+          set -euo pipefail
+          CARGO_VERSION=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -n1)
+          if [[ "${GITHUB_REF_NAME#v}" != "$CARGO_VERSION" ]]; then
+            echo "Tag ${GITHUB_REF_NAME} does not match Cargo.toml version ${CARGO_VERSION}" >&2
+            echo "Bump Cargo.toml first, or tag v${CARGO_VERSION}." >&2
+            exit 1
+          fi
+
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
@@ -82,11 +94,35 @@ jobs:
           set -euo pipefail
           VERSION="${{ steps.version.outputs.value }}"
           PKG="snake-${VERSION}-linux-x86_64"
+          BIN="target/x86_64-unknown-linux-gnu/release/snake"
+
+          # Portable tarball with desktop entry and install script.
           mkdir -p "dist/$PKG"
-          cp "target/x86_64-unknown-linux-gnu/release/snake" "dist/$PKG/"
+          cp "$BIN" "dist/$PKG/"
           cp README.md packaging/snake.desktop packaging/snake.png packaging/install-linux.sh "dist/$PKG/"
           chmod +x "dist/$PKG/snake" "dist/$PKG/install-linux.sh"
           tar -C dist -czf "dist/$PKG.tar.gz" "$PKG"
+
+          # Single-file AppImage that runs without installing anything.
+          APPDIR="build/AppDir"
+          rm -rf "$APPDIR"
+          mkdir -p "$APPDIR/usr/bin" "$APPDIR/usr/share/applications" \
+                   "$APPDIR/usr/share/icons/hicolor/512x512/apps"
+          cp "$BIN" "$APPDIR/usr/bin/snake"
+          cp packaging/snake.desktop "$APPDIR/snake.desktop"
+          cp packaging/snake.desktop "$APPDIR/usr/share/applications/snake.desktop"
+          cp packaging/snake.png "$APPDIR/snake.png"
+          cp packaging/snake.png "$APPDIR/usr/share/icons/hicolor/512x512/apps/snake.png"
+          printf '%s\n' \
+            '#!/bin/sh' \
+            'HERE="$(dirname "$(readlink -f "$0")")"' \
+            'exec "$HERE/usr/bin/snake" "$@"' > "$APPDIR/AppRun"
+          chmod +x "$APPDIR/AppRun"
+
+          curl -sSL -o build/appimagetool \
+            https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage
+          chmod +x build/appimagetool
+          ARCH=x86_64 build/appimagetool --appimage-extract-and-run "$APPDIR" "dist/$PKG.AppImage"
 
       - name: Package (Windows)
         if: runner.os == 'Windows'
@@ -95,11 +131,14 @@ jobs:
           set -euo pipefail
           VERSION="${{ steps.version.outputs.value }}"
           PKG="snake-${VERSION}-windows-x86_64"
+          EXE="target/x86_64-pc-windows-msvc/release/snake.exe"
           mkdir -p "dist/$PKG"
-          cp "target/x86_64-pc-windows-msvc/release/snake.exe" "dist/$PKG/"
+          cp "$EXE" "dist/$PKG/"
           cp README.md "dist/$PKG/"
           SEVENZIP="$(command -v 7z || echo '/c/Program Files/7-Zip/7z.exe')"
           "$SEVENZIP" a "dist/$PKG.zip" "dist/$PKG" > /dev/null
+          # Also publish the executable on its own for a one-click download.
+          cp "$EXE" "dist/$PKG.exe"
 
       - name: Package (macOS)
         if: runner.os == 'macOS'
@@ -127,6 +166,8 @@ jobs:
           path: |
             dist/*.tar.gz
             dist/*.zip
+            dist/*.AppImage
+            dist/*.exe
           if-no-files-found: error
 
   release:
@@ -139,6 +180,12 @@ jobs:
         with:
           path: artifacts
           merge-multiple: true
+
+      - name: Create checksums
+        run: |
+          cd artifacts
+          sha256sum * > SHA256SUMS.txt
+          cat SHA256SUMS.txt
 
       - name: Create release
         uses: softprops/action-gh-release@v2

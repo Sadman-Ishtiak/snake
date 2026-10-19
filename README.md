@@ -5,6 +5,8 @@ A polished take on the classic Snake game, built in Rust with
 
 <img src="packaging/snake.png" alt="Snake app icon" width="160">
 
+<img src="docs/screenshot.png" alt="Snake gameplay screenshot" width="640">
+
 ## Download
 
 Grab the latest build from the
@@ -13,7 +15,9 @@ Grab the latest build from the
 | Platform | File | Run it |
 | --- | --- | --- |
 | Linux x86_64 | `snake-<version>-linux-x86_64.tar.gz` | Extract, then `./snake` (or `./install-linux.sh`) |
+| Linux x86_64 (portable) | `snake-<version>-linux-x86_64.AppImage` | `chmod +x` the file, then run it directly |
 | Windows x86_64 | `snake-<version>-windows-x86_64.zip` | Extract, then run `snake.exe` |
+| Windows x86_64 (standalone) | `snake-<version>-windows-x86_64.exe` | Run it directly |
 | macOS Intel + Apple Silicon | `snake-<version>-macos-universal.zip` | Unzip, drag `Snake.app` to Applications |
 
 The macOS build is a universal binary inside a signed `.app` bundle. It is
@@ -64,10 +68,12 @@ cargo build --release
 
 Releases are built and published by
 [`.github/workflows/release.yml`](.github/workflows/release.yml) on GitHub
-Actions. Each run produces all three packages:
+Actions. Each run produces:
 
 - `snake-<version>-linux-x86_64.tar.gz`
+- `snake-<version>-linux-x86_64.AppImage`
 - `snake-<version>-windows-x86_64.zip`
+- `snake-<version>-windows-x86_64.exe`
 - `snake-<version>-macos-universal.zip` (x86_64 + aarch64 in one `.app`)
 
 To publish a new version:
@@ -91,6 +97,7 @@ To package locally on Linux:
 ```sh
 ./packaging/package-linux.sh
 # dist/snake-<version>-linux-x86_64.tar.gz
+# dist/snake-<version>-linux-x86_64.AppImage
 ```
 
 ## Regenerate the icon
